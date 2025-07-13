@@ -6,36 +6,32 @@ on:
 jobs:
   build:
     runs-on: windows-latest
+    timeout-minutes: 20
     steps:
-      - name: إنشاء مستخدم جديد
+      - name: إعداد المستخدم وتفعيل RDP
         run: |
+          # إنشاء مستخدم جديد
           net user TestUser P@ssw0rd123 /add
           net localgroup administrators TestUser /add
+
+          # تفعيل خدمة Remote Desktop
           Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" -Name "fDenyTSConnections" -Value 0
+
+          # فتح قواعد الجدار الناري
           Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
 
-      - name: تنزيل وتثبيت winget
+      - name: تنزيل plink.exe (أداة SSH من PuTTY)
         run: |
-          # إنشاء مجلد للتنزيل
-          $dir = "$env:TEMP\winget"
-          New-Item -ItemType Directory -Path $dir -Force
+          # تنزيل plink.exe إلى مجلد المؤقت
+          $url = "https://the.earth.li/~sgtatham/putty/latest/w64/plink.exe "
+          $output = "$env:TEMP\plink.exe"
+          Invoke-WebRequest -Uri $url -OutFile $output
 
-          # تنزيل حزمة App Installer
-          $url = "https://github.com/microsoft/winget-cli/releases/latest/download/Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle "
-          Invoke-WebRequest -Uri $url -OutFile "$dir\winget.msixbundle"
-
-          # تثبيت الحزمة
-          Add-AppxPackage -Path "$dir\winget.msixbundle"
-
-      - name: التأكد من توفر winget
+      - name: تشغيل الـ SSH Tunnel إلى localhost.run
         run: |
-          winget --version
-
-      - name: تثبيت OpenSSH Client
-        run: |
-          winget install --id=OpenSSH.Client -y
-
-      - name: تشغيل SSH Tunnel إلى localhost.run
-        run: |
-          ssh -o StrictHostKeyChecking=no -R 3389:localhost:3389 test@ssh.localhost.run
+          # تشغيل tunnel
+          $plink = "$env:TEMP\plink.exe"
+          Write-Output "🚀 تشغيل SSH Tunnel إلى localhost.run..."
+          & $plink -R 3389:localhost:3389 -N -l test ssh.localhost.run
+        shell: pwsh
         timeout-minutes: 15

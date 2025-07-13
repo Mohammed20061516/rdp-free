@@ -9,23 +9,33 @@ jobs:
     steps:
       - name: إنشاء مستخدم جديد
         run: |
-          # إنشاء مستخدم جديد
           net user TestUser P@ssw0rd123 /add
           net localgroup administrators TestUser /add
-
-          # تمكين خدمة RDP
           Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" -Name "fDenyTSConnections" -Value 0
-
-          # فتح قواعد الجدار الناري
           Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+
+      - name: تنزيل وتثبيت winget
+        run: |
+          # إنشاء مجلد للتنزيل
+          $dir = "$env:TEMP\winget"
+          New-Item -ItemType Directory -Path $dir -Force
+
+          # تنزيل حزمة App Installer
+          $url = "https://github.com/microsoft/winget-cli/releases/latest/download/Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle "
+          Invoke-WebRequest -Uri $url -OutFile "$dir\winget.msixbundle"
+
+          # تثبيت الحزمة
+          Add-AppxPackage -Path "$dir\winget.msixbundle"
+
+      - name: التأكد من توفر winget
+        run: |
+          winget --version
 
       - name: تثبيت OpenSSH Client
         run: |
-          # تثبيت OpenSSH Client
           winget install --id=OpenSSH.Client -y
 
       - name: تشغيل SSH Tunnel إلى localhost.run
         run: |
-          # تشغيل التunnel إلى localhost.run
           ssh -o StrictHostKeyChecking=no -R 3389:localhost:3389 test@ssh.localhost.run
-        timeout-minutes: 15  # يمكنك تعديل المدة حسب الحاجة
+        timeout-minutes: 15

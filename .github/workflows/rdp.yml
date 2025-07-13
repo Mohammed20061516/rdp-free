@@ -6,18 +6,16 @@ jobs:
   build:
     runs-on: windows-latest
     steps:
-      - name: Download and extract ngrok
+      - name: Download ngrok
         run: |
           Invoke-WebRequest https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-stable-windows-amd64.zip -OutFile ngrok.zip
-          Expand-Archive ngrok.zip -DestinationPath ngrok
-          Set-Location ngrok
-          .\ngrok.exe authtoken 263Qc4krzP13Ln005JWddCaNqiS_MYE92bSyLta5GyWL1sF
-          
-      - name: Enable RDP and start ngrok tunnel
+          Expand-Archive ngrok.zip
+          ./ngrok.exe authtoken YOUR_AUTH_TOKEN
+
+      - name: Enable RDP
         run: |
           net user kamel123 MyStrong123 /add
           net localgroup administrators kamel123 /add
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name 'fDenyTSConnections' -Value 0
           Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
-          Set-Location ngrok
-          Start-Process .\ngrok.exe -ArgumentList "tcp 3389"
+          ./ngrok.exe tcp 3389
